@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import { applyTimestamps } from "../../../backend/src/models/TradeRequest";
 
 const FILTERS = [
   { label: "Todas", value: "all" },
@@ -24,7 +23,7 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
   useEffect(() => {
     async function fetchPendingCodes() {
       try {
-        const { data } = await applyTimestamps.get("/trades/pending-stickers");
+        const { data } = await api.get("/trades/pending-stickers");
         setPendingCodes(data);
       } catch {
         console.error("Erro ao buscar figurinhas pendentes.");
