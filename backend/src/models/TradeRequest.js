@@ -9,8 +9,13 @@ const tradeRequestSchema = new mongoose.Schema(
     },
     requesterName: {
       type: String,
-      required: true,
       trim: true,
+      default: null,
+    },
+    requester: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     stickers: [
       {
@@ -19,9 +24,16 @@ const tradeRequestSchema = new mongoose.Schema(
         quantity: Number,
       },
     ],
+    counterStickers: [
+      {
+        code: String,
+        description: String,
+        quantity: Number,
+      },
+    ],
     status: {
       type: String,
-      enum: ["pendente", "aceito", "recusado"],
+      enum: ["pendente", "aceito", "recusado", "contraproposta"],
       default: "pendente",
     },
   },

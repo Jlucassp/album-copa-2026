@@ -1,11 +1,8 @@
 import { useState, useCallback } from "react";
 import api from "../services/api";
 
-function getInitialTrades() {
-  return [];
-}
 export default function Trocas() {
-  const [trades, setTrades] = useState(getInitialTrades);
+  const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTrades = useCallback(async () => {
@@ -19,18 +16,25 @@ export default function Trocas() {
     }
   }, []);
 
-  // Chama fetchTrades na primeira renderização sem useEffect
   const [fetched, setFetched] = useState(false);
   if (!fetched) {
     setFetched(true);
     fetchTrades();
   }
 
-  async function handleStatus(id, status) {
+  async function handleStatus(id, status, counterStickers) {
     try {
-      await api.patch(`/trades/${id}`, { status });
+      await api.patch(`/trades/${id}`, { status, counterStickers });
       setTrades((prev) =>
-        prev.map((t) => (t._id === id ? { ...t, status } : t)),
+        prev.map((t) =>
+          t._id === id
+            ? {
+                ...t,
+                status,
+                counterStickers: counterStickers || t.counterStickers,
+              }
+            : t,
+        ),
       );
     } catch {
       console.error("Erro ao atualizar pedido.");
@@ -119,12 +123,38 @@ export default function Trocas() {
 function TradeCard({ trade, onStatus, onDelete }) {
   const isPendente = trade.status === "pendente";
   const isAceito = trade.status === "aceito";
-  const statusColor = isPendente ? "#facc15" : isAceito ? "#4ade80" : "#f87171";
+  const [showCounter, setShowCounter] = useState(false);
+  const [counterCodes, setCounterCodes] = useState("");
+  const statusColor = isPendente
+    ? "#facc15"
+    : isAceito
+      ? "#4ade80"
+      : trade.status === "contraproposta"
+        ? "#60a5fa"
+        : "#f87171";
   const statusLabel = isPendente
     ? "Pendente"
     : isAceito
       ? "Aceito"
-      : "Recusado";
+      : trade.status === "contraproposta"
+        ? "Contraproposta"
+        : "Recusado";
+
+  async function handleCounter() {
+    const codes = counterCodes
+      .split(",")
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean);
+    if (codes.length === 0) return;
+    const stickers = codes.map((code) => ({
+      code,
+      description: "",
+      quantity: 1,
+    }));
+    await onStatus(trade._id, "contraproposta", stickers);
+    setShowCounter(false);
+    setCounterCodes("");
+  }
 
   return (
     <div
@@ -137,7 +167,7 @@ function TradeCard({ trade, onStatus, onDelete }) {
       <div className="flex items-center justify-between">
         <div>
           <p className="font-bold" style={{ color: "var(--text-primary)" }}>
-            {trade.requesterName}
+            {trade.requester?.name || trade.requesterName || "Usuário"}
           </p>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             {new Date(trade.createdAt).toLocaleDateString("pt-BR", {
@@ -157,23 +187,110 @@ function TradeCard({ trade, onStatus, onDelete }) {
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {trade.stickers.map((s, i) => (
-          <div
-            key={i}
-            className="px-3 py-1.5 rounded-lg border"
+      {/* Figurinhas solicitadas */}
+      <div>
+        <p
+          className="text-xs font-semibold uppercase tracking-widest mb-2"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Figurinhas solicitadas
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {trade.stickers.map((s, i) => (
+            <div
+              key={i}
+              className="px-3 py-1.5 rounded-lg border"
+              style={{
+                backgroundColor: "var(--bg-secondary)",
+                borderColor: "var(--border)",
+              }}
+            >
+              <p className="text-xs font-bold" style={{ color: "#60a5fa" }}>
+                {s.code}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Contraproposta enviada */}
+      {trade.status === "contraproposta" &&
+        trade.counterStickers?.length > 0 && (
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Sua contraproposta
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {trade.counterStickers.map((s, i) => (
+                <div
+                  key={i}
+                  className="px-3 py-1.5 rounded-lg border"
+                  style={{
+                    backgroundColor: "rgba(96,165,250,0.1)",
+                    borderColor: "rgba(96,165,250,0.4)",
+                  }}
+                >
+                  <p className="text-xs font-bold" style={{ color: "#60a5fa" }}>
+                    {s.code}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      {/* Campo contraproposta */}
+      {showCounter && (
+        <div className="space-y-2">
+          <p
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Códigos da contraproposta (separados por vírgula)
+          </p>
+          <input
+            type="text"
+            placeholder="ex: BRA1, MEX3, FWC2"
+            value={counterCodes}
+            onChange={(e) => setCounterCodes(e.target.value)}
+            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none border"
             style={{
               backgroundColor: "var(--bg-secondary)",
               borderColor: "var(--border)",
+              color: "var(--text-primary)",
             }}
-          >
-            <p className="text-xs font-bold" style={{ color: "#60a5fa" }}>
-              {s.code}
-            </p>
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleCounter}
+              className="flex-1 py-2 rounded-lg text-sm font-semibold"
+              style={{
+                backgroundColor: "rgba(96,165,250,0.15)",
+                color: "#60a5fa",
+                border: "1px solid rgba(96,165,250,0.3)",
+              }}
+            >
+              Enviar contraproposta
+            </button>
+            <button
+              onClick={() => setShowCounter(false)}
+              className="py-2 px-3 rounded-lg text-sm"
+              style={{
+                backgroundColor: "var(--bg-secondary)",
+                color: "var(--text-muted)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              Cancelar
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
+      {/* Ações */}
       <div className="flex gap-2">
         {isPendente && (
           <>
@@ -181,20 +298,33 @@ function TradeCard({ trade, onStatus, onDelete }) {
               onClick={() => onStatus(trade._id, "aceito")}
               className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
               style={{
-                backgroundColor: "rgba(74, 222, 128, 0.15)",
+                backgroundColor: "rgba(74,222,128,0.15)",
                 color: "#4ade80",
-                border: "1px solid rgba(74, 222, 128, 0.3)",
+                border: "1px solid rgba(74,222,128,0.3)",
               }}
             >
               ✓ Aceitar
             </button>
+            {!showCounter && (
+              <button
+                onClick={() => setShowCounter(true)}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={{
+                  backgroundColor: "rgba(96,165,250,0.15)",
+                  color: "#60a5fa",
+                  border: "1px solid rgba(96,165,250,0.3)",
+                }}
+              >
+                ↩ Contraproposta
+              </button>
+            )}
             <button
               onClick={() => onStatus(trade._id, "recusado")}
               className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
               style={{
-                backgroundColor: "rgba(248, 113, 113, 0.15)",
+                backgroundColor: "rgba(248,113,113,0.15)",
                 color: "#f87171",
-                border: "1px solid rgba(248, 113, 113, 0.3)",
+                border: "1px solid rgba(248,113,113,0.3)",
               }}
             >
               ✕ Recusar

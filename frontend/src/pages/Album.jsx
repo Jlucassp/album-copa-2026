@@ -4,6 +4,7 @@ import StickerGrid from "../components/StickerGrid";
 import Progress from "../components/Progress";
 import Repetidas from "../pages/Repetidas";
 import Trocas from "../pages/Trocas";
+import TrocasEnviadas from "../pages/TrocasEnviadas";
 import { useTheme } from "../context/useTheme";
 import { useAuth } from "../context/useAuth";
 
@@ -110,6 +111,21 @@ export default function Album() {
             </button>
           )}
 
+          {/* Título da seção */}
+          <h2
+            className="font-bold text-lg"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {active === "FWC" && "Especiais FWC"}
+            {active === "coca-cola" && "Coca-Cola"}
+            {active === "extra" && "Extra Stickers"}
+            {active === "repetidas" && "Minhas Repetidas"}
+            {active === "trocas" && "Pedidos de Troca"}
+            {active === "trocas-enviadas" && "Pedidos Enviados"}
+            {active.startsWith("group-") &&
+              `Grupo ${active.replace("group-", "")}`}
+          </h2>
+
           {/* Toggle tema */}
           <button
             onClick={toggleTheme}
@@ -158,6 +174,8 @@ export default function Album() {
             <Repetidas />
           ) : active === "trocas" && !search ? (
             <Trocas />
+          ) : active === "trocas-enviadas" && !search ? (
+            <TrocasEnviadas />
           ) : (
             <StickerGrid
               active={active}

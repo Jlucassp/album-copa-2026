@@ -89,6 +89,11 @@ export default function Sidebar({
             active={active === "trocas"}
             onClick={() => handleSelect("trocas")}
           />
+          <SidebarItem
+            label="📤 Pedidos Enviados"
+            active={active === "trocas-enviadas"}
+            onClick={() => handleSelect("trocas-enviadas")}
+          />
 
           <div className="pt-3 pb-1 px-3">
             <p

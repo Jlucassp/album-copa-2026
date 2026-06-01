@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 
 const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 
 export default function PublicRepetidas() {
   const { userId } = useParams();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [stickers, setStickers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState([]);
-  const [requesterName, setRequesterName] = useState("");
-  const [step, setStep] = useState("browse"); // browse | confirm | success
+  const [step, setStep] = useState("browse");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     async function fetchRepetidas() {
@@ -36,10 +39,13 @@ export default function PublicRepetidas() {
   }
 
   async function handleConfirm() {
-    if (!requesterName.trim()) return;
+    if (!user) {
+      navigate("/auth", { state: { redirect: `/repetidas/${userId}` } });
+      return;
+    }
+    setSubmitting(true);
     try {
       await api.post(`/trades/${userId}`, {
-        requesterName: requesterName.trim(),
         stickers: selected.map((s) => ({
           code: s.code,
           description: s.description,
@@ -47,8 +53,10 @@ export default function PublicRepetidas() {
         })),
       });
       setStep("success");
-    } catch {
-      alert("Erro ao enviar pedido. Tente novamente.");
+    } catch (err) {
+      alert(err.response?.data?.message || "Erro ao enviar pedido.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -95,6 +103,13 @@ export default function PublicRepetidas() {
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             O dono do álbum vai ver seu pedido em breve.
           </p>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-4 px-6 py-2.5 rounded-xl text-sm font-bold"
+            style={{ backgroundColor: "#facc15", color: "#09090b" }}
+          >
+            Ir para meu álbum
+          </button>
         </div>
       </div>
     );
@@ -135,20 +150,39 @@ export default function PublicRepetidas() {
             </p>
           </div>
 
-          {selected.length > 0 && step === "browse" && (
-            <button
-              onClick={() => setStep("confirm")}
-              className="px-4 py-2 rounded-xl text-sm font-bold transition-all"
-              style={{ backgroundColor: "#facc15", color: "#09090b" }}
-            >
-              Pedir {selected.length} figurinha
-              {selected.length !== 1 ? "s" : ""}
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {!user && (
+              <button
+                onClick={() =>
+                  navigate("/auth", {
+                    state: { redirect: `/repetidas/${userId}` },
+                  })
+                }
+                className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+                style={{
+                  backgroundColor: "var(--bg-card)",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                Entrar para pedir
+              </button>
+            )}
+            {user && selected.length > 0 && step === "browse" && (
+              <button
+                onClick={() => setStep("confirm")}
+                className="px-4 py-2 rounded-xl text-sm font-bold"
+                style={{ backgroundColor: "#facc15", color: "#09090b" }}
+              >
+                Pedir {selected.length} figurinha
+                {selected.length !== 1 ? "s" : ""}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Conteúdo */}
+      {/* Conteúdo browse */}
       {step === "browse" && (
         <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
           {stickers.length === 0 ? (
@@ -163,7 +197,9 @@ export default function PublicRepetidas() {
           ) : (
             <>
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                Clique nas figurinhas que você quer e depois confirme o pedido.
+                {user
+                  ? "Clique nas figurinhas que você quer e depois confirme o pedido."
+                  : "Entre na sua conta para solicitar figurinhas."}
               </p>
               {fwc.length > 0 && (
                 <Section
@@ -171,6 +207,7 @@ export default function PublicRepetidas() {
                   stickers={fwc}
                   selected={selected}
                   onToggle={toggleSelect}
+                  canSelect={!!user}
                 />
               )}
               {groups.map((g) => {
@@ -183,6 +220,7 @@ export default function PublicRepetidas() {
                     stickers={groupStickers}
                     selected={selected}
                     onToggle={toggleSelect}
+                    canSelect={!!user}
                   />
                 );
               })}
@@ -192,6 +230,7 @@ export default function PublicRepetidas() {
                   stickers={cocaCola}
                   selected={selected}
                   onToggle={toggleSelect}
+                  canSelect={!!user}
                 />
               )}
               {extra.length > 0 && (
@@ -200,6 +239,7 @@ export default function PublicRepetidas() {
                   stickers={extra}
                   selected={selected}
                   onToggle={toggleSelect}
+                  canSelect={!!user}
                 />
               )}
             </>
@@ -217,29 +257,24 @@ export default function PublicRepetidas() {
             Confirmar pedido
           </h2>
 
-          {/* Nome */}
-          <div>
-            <label
-              className="block text-xs font-semibold uppercase tracking-widest mb-1.5"
+          <div
+            className="px-4 py-3 rounded-xl border"
+            style={{
+              backgroundColor: "var(--bg-card)",
+              borderColor: "var(--border)",
+            }}
+          >
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-0.5"
               style={{ color: "var(--text-muted)" }}
             >
-              Seu nome
-            </label>
-            <input
-              type="text"
-              placeholder="Como você se chama?"
-              value={requesterName}
-              onChange={(e) => setRequesterName(e.target.value)}
-              className="w-full rounded-xl px-4 py-3 text-sm outline-none border"
-              style={{
-                backgroundColor: "var(--bg-secondary)",
-                borderColor: "var(--border)",
-                color: "var(--text-primary)",
-              }}
-            />
+              Solicitante
+            </p>
+            <p className="font-bold" style={{ color: "var(--text-primary)" }}>
+              {user.name}
+            </p>
           </div>
 
-          {/* Lista de figurinhas selecionadas */}
           <div>
             <p
               className="text-xs font-semibold uppercase tracking-widest mb-3"
@@ -286,7 +321,6 @@ export default function PublicRepetidas() {
             </div>
           </div>
 
-          {/* Botões */}
           <div className="flex gap-3">
             <button
               onClick={() => setStep("browse")}
@@ -301,11 +335,11 @@ export default function PublicRepetidas() {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={!requesterName.trim()}
+              disabled={submitting}
               className="flex-1 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
               style={{ backgroundColor: "#facc15", color: "#09090b" }}
             >
-              Enviar pedido
+              {submitting ? "Enviando..." : "Enviar pedido"}
             </button>
           </div>
         </div>
@@ -314,7 +348,7 @@ export default function PublicRepetidas() {
   );
 }
 
-function Section({ title, stickers, selected, onToggle }) {
+function Section({ title, stickers, selected, onToggle, canSelect }) {
   return (
     <div>
       <h3
@@ -330,7 +364,7 @@ function Section({ title, stickers, selected, onToggle }) {
           return (
             <button
               key={i}
-              onClick={() => onToggle(s)}
+              onClick={() => canSelect && onToggle(s)}
               className="rounded-xl px-4 py-3 flex items-center justify-between border transition-all text-left"
               style={{
                 backgroundColor: isSelected
@@ -339,6 +373,8 @@ function Section({ title, stickers, selected, onToggle }) {
                 borderColor: isSelected
                   ? "rgba(250, 204, 21, 0.5)"
                   : "rgba(96, 165, 250, 0.3)",
+                opacity: canSelect ? 1 : 0.6,
+                cursor: canSelect ? "pointer" : "default",
               }}
             >
               <div>

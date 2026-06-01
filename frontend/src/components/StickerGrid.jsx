@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { applyTimestamps } from "../../../backend/src/models/TradeRequest";
 
 const FILTERS = [
   { label: "Todas", value: "all" },
@@ -12,12 +13,25 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
   const [stickers, setStickers] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [pendingCodes, setPendingCodes] = useState([]);
   const [currentActive, setCurrentActive] = useState(active);
 
   if (active !== currentActive) {
     setCurrentActive(active);
     setFilter("all");
   }
+
+  useEffect(() => {
+    async function fetchPendingCodes() {
+      try {
+        const { data } = await applyTimestamps.get("/trades/pending-stickers");
+        setPendingCodes(data);
+      } catch {
+        console.error("Erro ao buscar figurinhas pendentes.");
+      }
+    }
+    fetchPendingCodes();
+  }, []);
 
   useEffect(() => {
     async function fetchStickers() {
@@ -268,6 +282,7 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
                     sticker={sticker}
                     onToggle={handleToggle}
                     onRepeat={handleRepeat}
+                    isPending={pendingCodes.includes(sticker.code)}
                   />
                 ))}
               </div>
@@ -282,6 +297,7 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
               sticker={sticker}
               onToggle={handleToggle}
               onRepeat={handleRepeat}
+              isPending={pendingCodes.includes(sticker.code)}
             />
           ))}
         </div>
@@ -290,7 +306,7 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
   );
 }
 
-function StickerCard({ sticker, onToggle, onRepeat }) {
+function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
   const isColada = sticker.status === "colada";
   const isRepetida = sticker.status === "repetida";
 
@@ -310,6 +326,18 @@ function StickerCard({ sticker, onToggle, onRepeat }) {
             : "var(--border)",
       }}
     >
+      {/* Indicador de troca pendente */}
+      {isPending && (
+        <div
+          className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2"
+          style={{
+            backgroundColor: "#f97316",
+            borderColor: "var(--bg-primary)",
+          }}
+          title="Troca pendente"
+        />
+      )}
+
       <span
         className="text-xs font-bold"
         style={{

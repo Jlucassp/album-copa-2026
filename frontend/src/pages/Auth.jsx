@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
 
@@ -10,7 +10,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-
+  const location = useLocation();
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
@@ -29,8 +29,9 @@ export default function Auth() {
           : { name: form.name, email: form.email, password: form.password };
 
       const { data } = await api.post(endpoint, payload);
+      const redirect = location.state?.redirect || "/";
       login(data.token, data.user);
-      navigate("/");
+      navigate(redirect);
     } catch (err) {
       setError(
         err.response?.data?.message || "Erro ao conectar com o servidor.",
