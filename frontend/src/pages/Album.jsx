@@ -27,8 +27,8 @@ export default function Album() {
 
   return (
     <div
-      className="flex h-screen overflow-hidden"
-      style={{ backgroundColor: "var(--bg-primary)" }}
+      className="flex overflow-hidden"
+      style={{ backgroundColor: "var(--bg-primary)", height: "100dvh" }}
     >
       <Sidebar
         active={active}
