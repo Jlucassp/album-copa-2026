@@ -14,7 +14,7 @@ const userStickerSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["colada", "repetida"],
+      enum: ["colada", "repetida", "a_colar"],
       required: true,
     },
     quantity: {

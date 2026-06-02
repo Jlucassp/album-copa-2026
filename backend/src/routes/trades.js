@@ -64,9 +64,10 @@ router.get("/sent", auth, async (req, res) => {
   }
 });
 
-// GET /api/trades/pending-stickers - códigos de figurinhas com troca pendente
+// GET /api/trades/pending-stickers - códigos bloqueados para o solicitante
 router.get("/pending-stickers", auth, async (req, res) => {
   try {
+    // Figurinhas em pedidos pendentes
     const trades = await TradeRequest.find({
       requester: req.userId,
       status: { $in: ["pendente", "contraproposta"] },
@@ -75,6 +76,19 @@ router.get("/pending-stickers", auth, async (req, res) => {
     const codes = new Set();
     trades.forEach((trade) => {
       trade.stickers.forEach((s) => codes.add(s.code));
+    });
+
+    // Figurinhas com status a_colar na coleção do solicitante
+    const UserSticker = require("../models/UserSticker");
+    const Sticker = require("../models/Sticker");
+
+    const aColares = await UserSticker.find({
+      user: req.userId,
+      status: "a_colar"
+    }).populate("sticker");
+
+    aColares.forEach(us => {
+      if (us.sticker) codes.add(us.sticker.code);
     });
 
     res.json([...codes]);
@@ -134,6 +148,77 @@ router.patch("/:id/edit", auth, async (req, res) => {
       return res
         .status(404)
         .json({ message: "Pedido não encontrado ou não pode ser editado." });
+    }
+
+    res.json(trade);
+  } catch (err) {
+    res.status(500).json({ message: "Erro no servidor.", error: err.message });
+  }
+});
+
+// PATCH /api/trades/:id/deliver - dono marca quais figurinhas foram entregues
+router.patch("/:id/deliver", auth, async (req, res) => {
+  try {
+    const { deliveredCodes } = req.body;
+
+    if (!deliveredCodes || !Array.isArray(deliveredCodes)) {
+      return res.status(400).json({ message: "Lista de figurinhas inválida." });
+    }
+
+    const trade = await TradeRequest.findOne({ _id: req.params.id, owner: req.userId });
+    if (!trade) {
+      return res.status(404).json({ message: "Pedido não encontrado." });
+    }
+
+    if (!trade.requester) {
+      return res.status(400).json({ message: "Pedido sem solicitante identificado." });
+    }
+
+    // Marca as figurinhas entregues no pedido
+    trade.stickers = trade.stickers.map(s => ({
+      ...s.toObject(),
+      delivered: deliveredCodes.includes(s.code)
+    }));
+    trade.status = "aceito";
+    await trade.save();
+
+    // Para cada figurinha entregue, atualiza a coleção do solicitante e do dono
+    const Sticker = require("../models/Sticker");
+    const UserSticker = require("../models/UserSticker");
+
+    for (const code of deliveredCodes) {
+      const sticker = await Sticker.findOne({ code });
+      if (!sticker) continue;
+
+      // Adiciona como a_colar na coleção do solicitante
+      await UserSticker.findOneAndUpdate(
+        { user: trade.requester, sticker: sticker._id },
+        { status: "a_colar", quantity: 1 },
+        { upsert: true, new: true }
+      );
+
+      // Diminui repetidas do dono
+      const ownerSticker = await UserSticker.findOne({
+        user: trade.owner,
+        sticker: sticker._id,
+        status: "repetida"
+      });
+
+      if (ownerSticker) {
+        if (ownerSticker.quantity <= 1) {
+          // Volta para colada se só tiver 1 repetida
+          await UserSticker.findOneAndUpdate(
+            { user: trade.owner, sticker: sticker._id },
+            { status: "colada", quantity: 1 }
+          );
+        } else {
+          // Diminui a quantidade de repetidas
+          await UserSticker.findOneAndUpdate(
+            { user: trade.owner, sticker: sticker._id },
+            { $inc: { quantity: -1 } }
+          );
+        }
+      }
     }
 
     res.json(trade);

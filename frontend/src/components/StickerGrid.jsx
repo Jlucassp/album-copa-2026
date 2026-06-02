@@ -308,6 +308,7 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
 function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
   const isColada = sticker.status === "colada";
   const isRepetida = sticker.status === "repetida";
+  const isAColar = sticker.status === "a_colar";
 
   return (
     <div
@@ -317,11 +318,15 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
           ? "rgba(250, 204, 21, 0.1)"
           : isRepetida
             ? "rgba(96, 165, 250, 0.1)"
+          : isAColar
+            ? "rgba(74, 222, 128, 0.1)"
             : "var(--bg-card)",
         borderColor: isColada
           ? "rgba(250, 204, 21, 0.5)"
           : isRepetida
             ? "rgba(96, 165, 250, 0.5)"
+          : isAColar
+            ? "rgba(74, 222, 128, 0.5)"
             : "var(--border)",
       }}
     >
@@ -344,6 +349,8 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
             ? "#facc15"
             : isRepetida
               ? "#60a5fa"
+            : isAColar
+              ? "#4ade80"
               : "var(--text-muted)",
         }}
       >
@@ -352,22 +359,26 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
 
       <button
         onClick={() => onToggle(sticker)}
-        title={isColada || isRepetida ? "Remover" : "Marcar como colada"}
+        title={isColada || isRepetida || isAColar ? "Remover" : "Marcar como colada"}
         className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all"
         style={{
           backgroundColor: isColada
             ? "#facc15"
             : isRepetida
               ? "rgba(96, 165, 250, 0.2)"
+            : isAColar
+              ? "rgba(74, 222, 128, 0.2)"
               : "var(--bg-secondary)",
           color: isColada
             ? "#09090b"
             : isRepetida
               ? "#60a5fa"
+            : isAColar
+              ? "#4ade80"
               : "var(--text-muted)",
         }}
       >
-        {isColada || isRepetida ? "✓" : "+"}
+        {isColada || isRepetida || isAColar ? "✓" : "+"}
       </button>
 
       {(isColada || isRepetida) && (

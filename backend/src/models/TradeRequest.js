@@ -22,6 +22,10 @@ const tradeRequestSchema = new mongoose.Schema(
         code: String,
         description: String,
         quantity: Number,
+        delivered: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
     counterStickers: [

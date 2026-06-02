@@ -93,6 +93,7 @@ export default function Trocas() {
               trade={trade}
               onStatus={handleStatus}
               onDelete={handleDelete}
+              onRefresh={fetchTrades}
             />
           ))}
         </div>
@@ -112,6 +113,7 @@ export default function Trocas() {
               trade={trade}
               onStatus={handleStatus}
               onDelete={handleDelete}
+              onRefresh={fetchTrades}
             />
           ))}
         </div>
@@ -120,11 +122,14 @@ export default function Trocas() {
   );
 }
 
-function TradeCard({ trade, onStatus, onDelete }) {
+function TradeCard({ trade, onStatus, onDelete, onRefresh }) {
   const isPendente = trade.status === "pendente";
   const isAceito = trade.status === "aceito";
   const [showCounter, setShowCounter] = useState(false);
   const [counterCodes, setCounterCodes] = useState("");
+  const [showDeliver, setShowDeliver] = useState(false);
+  const [deliveredCodes, setDeliveredCodes] = useState([]);
+
   const statusColor = isPendente
     ? "#facc15"
     : isAceito
@@ -139,6 +144,23 @@ function TradeCard({ trade, onStatus, onDelete }) {
       : trade.status === "contraproposta"
         ? "Contraproposta"
         : "Recusado";
+
+  function toggleDeliver(code) {
+    setDeliveredCodes((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+  }
+
+  async function handleDeliver() {
+    try {
+      await api.patch(`/trades/${trade._id}/deliver`, { deliveredCodes });
+      setShowDeliver(false);
+      setDeliveredCodes([]);
+      onRefresh();
+    } catch (err) {
+      alert(err.response?.data?.message || "Erro ao registrar entrega.");
+    }
+  }
 
   async function handleCounter() {
     const codes = counterCodes
@@ -199,18 +221,42 @@ function TradeCard({ trade, onStatus, onDelete }) {
           {trade.stickers.map((s, i) => (
             <div
               key={i}
-              className="px-3 py-1.5 rounded-lg border"
+              onClick={() => showDeliver && toggleDeliver(s.code)}
+              className="px-3 py-1.5 rounded-lg border transition-all"
               style={{
-                backgroundColor: "var(--bg-secondary)",
-                borderColor: "var(--border)",
+                backgroundColor: deliveredCodes.includes(s.code)
+                  ? "rgba(74,222,128,0.15)"
+                  : s.delivered
+                    ? "rgba(74,222,128,0.1)"
+                    : "var(--bg-secondary)",
+                borderColor: deliveredCodes.includes(s.code)
+                  ? "#4ade80"
+                  : s.delivered
+                    ? "rgba(74,222,128,0.4)"
+                    : "var(--border)",
+                cursor: showDeliver ? "pointer" : "default",
               }}
             >
-              <p className="text-xs font-bold" style={{ color: "#60a5fa" }}>
-                {s.code}
+              <p
+                className="text-xs font-bold"
+                style={{
+                  color: deliveredCodes.includes(s.code)
+                    ? "#4ade80"
+                    : s.delivered
+                      ? "#4ade80"
+                      : "#60a5fa",
+                }}
+              >
+                {s.code} {s.delivered ? "✓" : ""}
               </p>
             </div>
           ))}
         </div>
+        {showDeliver && (
+          <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
+            Clique nas figurinhas que foram entregues
+          </p>
+        )}
       </div>
 
       {/* Contraproposta enviada */}
@@ -290,22 +336,55 @@ function TradeCard({ trade, onStatus, onDelete }) {
         </div>
       )}
 
-      {/* Ações */}
-      <div className="flex gap-2">
-        {isPendente && (
-          <>
-            <button
-              onClick={() => onStatus(trade._id, "aceito")}
-              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={{
-                backgroundColor: "rgba(74,222,128,0.15)",
-                color: "#4ade80",
-                border: "1px solid rgba(74,222,128,0.3)",
-              }}
-            >
-              ✓ Aceitar
-            </button>
-            {!showCounter && (
+      {/* Ações entregar */}
+      {showDeliver && (
+        <div className="flex gap-2">
+          <button
+            onClick={handleDeliver}
+            disabled={deliveredCodes.length === 0}
+            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+            style={{
+              backgroundColor: "rgba(74,222,128,0.15)",
+              color: "#4ade80",
+              border: "1px solid rgba(74,222,128,0.3)",
+            }}
+          >
+            ✓ Confirmar {deliveredCodes.length} entregue
+            {deliveredCodes.length !== 1 ? "s" : ""}
+          </button>
+          <button
+            onClick={() => {
+              setShowDeliver(false);
+              setDeliveredCodes([]);
+            }}
+            className="py-2 px-3 rounded-lg text-sm"
+            style={{
+              backgroundColor: "var(--bg-secondary)",
+              color: "var(--text-muted)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {/* Ações principais */}
+      {!showDeliver && !showCounter && (
+        <div className="flex gap-2">
+          {isPendente && (
+            <>
+              <button
+                onClick={() => setShowDeliver(true)}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={{
+                  backgroundColor: "rgba(74,222,128,0.15)",
+                  color: "#4ade80",
+                  border: "1px solid rgba(74,222,128,0.3)",
+                }}
+              >
+                ✓ Registrar entrega
+              </button>
               <button
                 onClick={() => setShowCounter(true)}
                 className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
@@ -317,32 +396,32 @@ function TradeCard({ trade, onStatus, onDelete }) {
               >
                 ↩ Contraproposta
               </button>
-            )}
-            <button
-              onClick={() => onStatus(trade._id, "recusado")}
-              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={{
-                backgroundColor: "rgba(248,113,113,0.15)",
-                color: "#f87171",
-                border: "1px solid rgba(248,113,113,0.3)",
-              }}
-            >
-              ✕ Recusar
-            </button>
-          </>
-        )}
-        <button
-          onClick={() => onDelete(trade._id)}
-          className="py-2 px-3 rounded-lg text-sm transition-all"
-          style={{
-            backgroundColor: "var(--bg-secondary)",
-            color: "var(--text-muted)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          🗑
-        </button>
-      </div>
+              <button
+                onClick={() => onStatus(trade._id, "recusado")}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={{
+                  backgroundColor: "rgba(248,113,113,0.15)",
+                  color: "#f87171",
+                  border: "1px solid rgba(248,113,113,0.3)",
+                }}
+              >
+                ✕ Recusar
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => onDelete(trade._id)}
+            className="py-2 px-3 rounded-lg text-sm transition-all"
+            style={{
+              backgroundColor: "var(--bg-secondary)",
+              color: "var(--text-muted)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            🗑
+          </button>
+        </div>
+      )}
     </div>
   );
 }

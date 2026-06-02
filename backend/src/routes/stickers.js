@@ -95,7 +95,7 @@ router.get("/progress", auth, async (req, res) => {
 
     const possuidas = userStickers.filter(
       (us) =>
-        ["colada", "repetida"].includes(us.status) &&
+        ["colada", "repetida", "a_colar"].includes(us.status) &&
         us.sticker.section !== "extra",
     );
     const repetidas = userStickers.filter(
@@ -110,7 +110,7 @@ router.get("/progress", auth, async (req, res) => {
       const total = await Sticker.countDocuments({ group });
       const possuídasGroup = userStickers.filter(
         (us) =>
-          ["colada", "repetida"].includes(us.status) &&
+          ["colada", "repetida", "a_colar"].includes(us.status) &&
           us.sticker.group === group,
       ).length;
 
