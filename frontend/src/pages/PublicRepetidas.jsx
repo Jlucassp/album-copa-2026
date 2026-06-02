@@ -15,9 +15,10 @@ export default function PublicRepetidas() {
   const [selected, setSelected] = useState([]);
   const [step, setStep] = useState("browse");
   const [submitting, setSubmitting] = useState(false);
+  const [blockedCodes, setBlockedCodes] = useState([]);
 
   useEffect(() => {
-    async function fetchRepetidas() {
+    async function fetchData() {
       try {
         const { data } = await api.get(`/stickers/public/${userId}`);
         setStickers(data);
@@ -27,10 +28,24 @@ export default function PublicRepetidas() {
         setLoading(false);
       }
     }
-    fetchRepetidas();
+    fetchData();
   }, [userId]);
 
+  useEffect(() => {
+    async function fetchBlocked() {
+      if (!user) return;
+      try {
+        const { data } = await api.get("/trades/pending-stickers");
+        setBlockedCodes(data);
+      } catch {
+        console.error("Erro ao buscar figurinhas bloqueadas.");
+      }
+    }
+    fetchBlocked();
+  }, [user]);
+
   function toggleSelect(sticker) {
+    if (blockedCodes.includes(sticker.code)) return;
     setSelected((prev) => {
       const exists = prev.find((s) => s.code === sticker.code);
       if (exists) return prev.filter((s) => s.code !== sticker.code);
@@ -208,6 +223,7 @@ export default function PublicRepetidas() {
                   selected={selected}
                   onToggle={toggleSelect}
                   canSelect={!!user}
+                  blockedCodes={blockedCodes}
                 />
               )}
               {groups.map((g) => {
@@ -221,6 +237,7 @@ export default function PublicRepetidas() {
                     selected={selected}
                     onToggle={toggleSelect}
                     canSelect={!!user}
+                    blockedCodes={blockedCodes}
                   />
                 );
               })}
@@ -231,6 +248,7 @@ export default function PublicRepetidas() {
                   selected={selected}
                   onToggle={toggleSelect}
                   canSelect={!!user}
+                  blockedCodes={blockedCodes}
                 />
               )}
               {extra.length > 0 && (
@@ -240,6 +258,7 @@ export default function PublicRepetidas() {
                   selected={selected}
                   onToggle={toggleSelect}
                   canSelect={!!user}
+                  blockedCodes={blockedCodes}
                 />
               )}
             </>
@@ -348,7 +367,14 @@ export default function PublicRepetidas() {
   );
 }
 
-function Section({ title, stickers, selected, onToggle, canSelect }) {
+function Section({
+  title,
+  stickers,
+  selected,
+  onToggle,
+  canSelect,
+  blockedCodes = [],
+}) {
   return (
     <div>
       <h3
@@ -361,26 +387,41 @@ function Section({ title, stickers, selected, onToggle, canSelect }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
         {stickers.map((s, i) => {
           const isSelected = selected.find((sel) => sel.code === s.code);
+          const isBlocked = blockedCodes.includes(s.code);
           return (
             <button
               key={i}
-              onClick={() => canSelect && onToggle(s)}
+              onClick={() => canSelect && !isBlocked && onToggle(s)}
               className="rounded-xl px-4 py-3 flex items-center justify-between border transition-all text-left"
               style={{
-                backgroundColor: isSelected
-                  ? "rgba(250, 204, 21, 0.1)"
-                  : "var(--bg-card)",
-                borderColor: isSelected
-                  ? "rgba(250, 204, 21, 0.5)"
-                  : "rgba(96, 165, 250, 0.3)",
-                opacity: canSelect ? 1 : 0.6,
-                cursor: canSelect ? "pointer" : "default",
+                backgroundColor: isBlocked
+                  ? "var(--bg-secondary)"
+                  : isSelected
+                    ? "rgba(250, 204, 21, 0.1)"
+                    : "var(--bg-card)",
+                borderColor: isBlocked
+                  ? "var(--bg-secondary)"
+                  : isSelected
+                    ? "rgba(250, 204, 21, 0.5)"
+                    : "rgba(96, 165, 250, 0.3)",
+                opacity: isBlocked ? 0.5 : canSelect ? 1 : 0.6,
+                cursor: isBlocked
+                  ? "not-allowed"
+                  : canSelect
+                    ? "pointer"
+                    : "default",
               }}
             >
               <div>
                 <p
                   className="font-bold text-sm"
-                  style={{ color: isSelected ? "#facc15" : "#60a5fa" }}
+                  style={{
+                    color: isBlocked
+                      ? "var(--text-muted)"
+                      : isSelected
+                        ? "#facc15"
+                        : "#60a5fa",
+                  }}
                 >
                   {s.code}
                 </p>
@@ -388,14 +429,20 @@ function Section({ title, stickers, selected, onToggle, canSelect }) {
                   className="text-xs truncate"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  {s.description}
+                  {isBlocked ? "já solicitada" : s.description}
                 </p>
               </div>
               <span
                 className="font-black text-lg"
-                style={{ color: isSelected ? "#facc15" : "#60a5fa" }}
+                style={{
+                  color: isBlocked
+                    ? "var(--text-muted)"
+                    : isSelected
+                      ? "#facc15"
+                      : "#60a5fa",
+                }}
               >
-                {isSelected ? "✓" : `${s.quantity}x`}
+                {isBlocked ? "🔒" : isSelected ? "✓" : `${s.quantity}x`}
               </span>
             </button>
           );
