@@ -13,6 +13,8 @@ export default function Sidebar({
 }) {
   const { user, logout } = useAuth();
   const [byGroup, setByGroup] = useState({});
+  const [pendingCount, setPendingCount] = useState(0);
+  const [sentCount, setSentCount] = useState(0);
 
   useEffect(() => {
     async function fetchProgress() {
@@ -24,6 +26,30 @@ export default function Sidebar({
       }
     }
     fetchProgress();
+  }, [refreshKey]);
+
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const [received, sent] = await Promise.all([
+          api.get("/trades"),
+          api.get("/trades/sent"),
+        ]);
+        setPendingCount(
+          received.data.filter((t) => t.status === "pendente").length,
+        );
+        setSentCount(
+          sent.data.filter((t) => t.status === "contraproposta").length,
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchNotifications();
+
+    // Atualiza a cada 30 segundos
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
   }, [refreshKey]);
 
   function handleSelect(section) {
@@ -88,11 +114,14 @@ export default function Sidebar({
             label="🤝 Pedidos de Troca"
             active={active === "trocas"}
             onClick={() => handleSelect("trocas")}
+            badge={pendingCount}
           />
           <SidebarItem
             label="📤 Pedidos Enviados"
             active={active === "trocas-enviadas"}
             onClick={() => handleSelect("trocas-enviadas")}
+            badge={sentCount}
+            badgeColor="#60a5fa"
           />
 
           <div className="pt-3 pb-1 px-3">
@@ -164,7 +193,14 @@ export default function Sidebar({
   );
 }
 
-function SidebarItem({ label, active, onClick, percent }) {
+function SidebarItem({
+  label,
+  active,
+  onClick,
+  percent,
+  badge,
+  badgeColor = "#facc15",
+}) {
   return (
     <button
       onClick={onClick}
@@ -182,14 +218,29 @@ function SidebarItem({ label, active, onClick, percent }) {
     >
       <div className="flex items-center justify-between">
         <span>{label}</span>
-        {percent !== undefined && (
-          <span
-            className="text-xs font-bold"
-            style={{ color: active ? "#09090b" : "var(--text-muted)" }}
-          >
-            {percent}%
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {badge > 0 && (
+            <span
+              className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+              style={{
+                backgroundColor: active ? "rgba(0,0,0,0.2)" : `${badgeColor}25`,
+                color: active ? "#09090b" : badgeColor,
+                minWidth: "20px",
+                textAlign: "center",
+              }}
+            >
+              {badge}
+            </span>
+          )}
+          {percent !== undefined && (
+            <span
+              className="text-xs font-bold"
+              style={{ color: active ? "#09090b" : "var(--text-muted)" }}
+            >
+              {percent}%
+            </span>
+          )}
+        </div>
       </div>
       {percent !== undefined && (
         <div
