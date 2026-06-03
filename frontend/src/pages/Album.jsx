@@ -71,7 +71,8 @@ export default function Album() {
           <div className="flex-1 relative">
             <input
               type="text"
-              autoComplete="off"
+              autoComplete="new-password"
+              name="busca-figurinha"
               placeholder="Buscar figurinha (ex: BRA1, FWC3, MEX...)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
