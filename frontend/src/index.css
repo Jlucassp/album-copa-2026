@@ -34,10 +34,11 @@ button {
   cursor: pointer;
 }
 
-html, body {
+html,
+body {
   height: 100%;
 }
 
 #root {
-  height: 100dvh;
+  height: 100dvh, ;
 }
