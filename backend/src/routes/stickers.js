@@ -96,10 +96,12 @@ router.get("/progress", auth, async (req, res) => {
     const possuidas = userStickers.filter(
       (us) =>
         ["colada", "repetida", "a_colar"].includes(us.status) &&
-        us.sticker.section !== "extra",
+        ["FWC", "team"].includes(us.sticker.section),
     );
     const repetidas = userStickers.filter(
-      (us) => us.status === "repetida" && us.sticker.section !== "extra",
+      (us) =>
+        us.status === "repetida" &&
+        ["FWC", "team"].includes(us.sticker.section),
     );
     const totalRepetidas = repetidas.reduce((acc, us) => acc + us.quantity, 0);
 
