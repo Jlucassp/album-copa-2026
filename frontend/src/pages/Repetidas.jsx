@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 
+const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
 export default function Repetidas() {
   const [stickers, setStickers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function fetchRepetidas() {
@@ -19,6 +22,61 @@ export default function Repetidas() {
     }
     fetchRepetidas();
   }, []);
+
+  function handleExport() {
+    const fwc = stickers.filter((s) => s.section === "FWC");
+    const teams = stickers.filter((s) => s.section === "team");
+    const cocaCola = stickers.filter((s) => s.section === "coca-cola");
+    const extra = stickers.filter((s) => s.section === "extra");
+
+    let text = "🔁 *Minhas repetidas - Meu Álbum Copa 2026*\n\n";
+
+    if (fwc.length > 0) {
+      text += `⭐ *FWC*\n`;
+      text += fwc
+        .map((s) => `${s.code}${s.quantity > 1 ? ` (${s.quantity}x)` : ""}`)
+        .join(", ");
+      text += "\n\n";
+    }
+
+    groups.forEach((g) => {
+      const groupStickers = teams.filter((s) => s.group === g);
+      if (groupStickers.length === 0) return;
+
+      const teamNames = [...new Set(groupStickers.map((s) => s.team))];
+      teamNames.forEach((team) => {
+        const teamStickers = groupStickers.filter((s) => s.team === team);
+        text += `*${team}*\n`;
+        text += teamStickers
+          .map((s) => `${s.code}${s.quantity > 1 ? ` (${s.quantity}x)` : ""}`)
+          .join(", ");
+        text += "\n\n";
+      });
+    });
+
+    if (cocaCola.length > 0) {
+      text += `🥤 *Coca-Cola*\n`;
+      text += cocaCola
+        .map((s) => `${s.code}${s.quantity > 1 ? ` (${s.quantity}x)` : ""}`)
+        .join(", ");
+      text += "\n\n";
+    }
+
+    if (extra.length > 0) {
+      text += `✨ *Extra Stickers*\n`;
+      text += extra
+        .map((s) => `${s.code}${s.quantity > 1 ? ` (${s.quantity}x)` : ""}`)
+        .join(", ");
+      text += "\n\n";
+    }
+
+    const total = stickers.reduce((acc, s) => acc + s.quantity, 0);
+    text += `_Total: ${total} figurinha${total !== 1 ? "s" : ""} repetida${total !== 1 ? "s" : ""}_`;
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  }
 
   if (loading) {
     return (
@@ -47,10 +105,32 @@ export default function Repetidas() {
   const teams = stickers.filter((s) => s.section === "team");
   const cocaCola = stickers.filter((s) => s.section === "coca-cola");
   const extra = stickers.filter((s) => s.section === "extra");
-  const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+  const total = stickers.reduce((acc, s) => acc + s.quantity, 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header com botão exportar */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          {total} figurinha{total !== 1 ? "s" : ""} repetida
+          {total !== 1 ? "s" : ""}
+        </p>
+        <button
+          onClick={handleExport}
+          className="text-xs px-4 py-2 rounded-lg font-semibold transition-all"
+          style={{
+            backgroundColor: copied
+              ? "rgba(74,222,128,0.15)"
+              : "rgba(250,204,21,0.15)",
+            color: copied ? "#4ade80" : "#facc15",
+            border: `1px solid ${copied ? "rgba(74,222,128,0.3)" : "rgba(250,204,21,0.3)"}`,
+          }}
+        >
+          {copied ? "✓ Copiado!" : "📋 Copiar para WhatsApp"}
+        </button>
+      </div>
+
+      {/* Lista */}
       {fwc.length > 0 && <Section title="⭐ Especiais FWC" stickers={fwc} />}
       {groups.map((g) => {
         const groupStickers = teams.filter((s) => s.group === g);

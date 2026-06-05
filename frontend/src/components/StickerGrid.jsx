@@ -121,7 +121,11 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
         ? true
         : filter === "missing"
           ? !s.status
-          : s.status === filter;
+          : filter === "colada"
+            ? s.status === "colada" ||
+              s.status === "repetida" ||
+              s.status === "a_colar"
+            : s.status === filter;
 
     const matchesSearch =
       !globalSearch.trim() ||
@@ -318,16 +322,16 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
           ? "rgba(250, 204, 21, 0.1)"
           : isRepetida
             ? "rgba(96, 165, 250, 0.1)"
-          : isAColar
-            ? "rgba(74, 222, 128, 0.1)"
-            : "var(--bg-card)",
+            : isAColar
+              ? "rgba(74, 222, 128, 0.1)"
+              : "var(--bg-card)",
         borderColor: isColada
           ? "rgba(250, 204, 21, 0.5)"
           : isRepetida
             ? "rgba(96, 165, 250, 0.5)"
-          : isAColar
-            ? "rgba(74, 222, 128, 0.5)"
-            : "var(--border)",
+            : isAColar
+              ? "rgba(74, 222, 128, 0.5)"
+              : "var(--border)",
       }}
     >
       {/* Indicador de troca pendente */}
@@ -349,9 +353,9 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
             ? "#facc15"
             : isRepetida
               ? "#60a5fa"
-            : isAColar
-              ? "#4ade80"
-              : "var(--text-muted)",
+              : isAColar
+                ? "#4ade80"
+                : "var(--text-muted)",
         }}
       >
         {sticker.code}
@@ -359,23 +363,25 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
 
       <button
         onClick={() => onToggle(sticker)}
-        title={isColada || isRepetida || isAColar ? "Remover" : "Marcar como colada"}
+        title={
+          isColada || isRepetida || isAColar ? "Remover" : "Marcar como colada"
+        }
         className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all"
         style={{
           backgroundColor: isColada
             ? "#facc15"
             : isRepetida
               ? "rgba(96, 165, 250, 0.2)"
-            : isAColar
-              ? "rgba(74, 222, 128, 0.2)"
-              : "var(--bg-secondary)",
+              : isAColar
+                ? "rgba(74, 222, 128, 0.2)"
+                : "var(--bg-secondary)",
           color: isColada
             ? "#09090b"
             : isRepetida
               ? "#60a5fa"
-            : isAColar
-              ? "#4ade80"
-              : "var(--text-muted)",
+              : isAColar
+                ? "#4ade80"
+                : "var(--text-muted)",
         }}
       >
         {isColada || isRepetida || isAColar ? "✓" : "+"}
