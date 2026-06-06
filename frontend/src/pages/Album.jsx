@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import StickerGrid from "../components/StickerGrid";
 import Progress from "../components/Progress";
@@ -15,10 +15,31 @@ export default function Album() {
   const [search, setSearch] = useState("");
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const [progressData, setProgressData] = useState(null);
 
-  const handleRefresh = useCallback(() => {
+  function handleRefresh() {
     setRefreshKey((k) => k + 1);
-  }, []);
+  }
+
+  function handleStickerChange(oldStatus, newStatus) {
+    if (!progressData) return;
+
+    setProgressData((prev) => {
+      const next = { ...prev };
+      const wasOwned = ["colada", "repetida", "a_colar"].includes(oldStatus);
+      const isOwned = ["colada", "repetida", "a_colar"].includes(newStatus);
+
+      if (!wasOwned && isOwned) next.coladas += 1;
+      if (wasOwned && !isOwned) next.coladas -= 1;
+
+      if (oldStatus === "repetida" && newStatus !== "repetida")
+        next.repetidas -= 1;
+      if (newStatus === "repetida" && oldStatus !== "repetida")
+        next.repetidas += 1;
+
+      return next;
+    });
+  }
 
   function handleSelect(section) {
     setActive(section);
@@ -169,7 +190,11 @@ export default function Album() {
           </button>
         </header>
 
-        <Progress refreshKey={refreshKey} />
+        <Progress
+          refreshKey={refreshKey}
+          progressData={progressData}
+          setProgressData={setProgressData}
+        />
 
         <div className="flex-1 overflow-y-auto p-6">
           {active === "repetidas" && !search ? (
@@ -183,6 +208,7 @@ export default function Album() {
               active={active}
               onRefresh={handleRefresh}
               globalSearch={search}
+              onStickerChange={handleStickerChange}
             />
           )}
         </div>

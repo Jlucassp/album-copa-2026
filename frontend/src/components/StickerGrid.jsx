@@ -8,7 +8,12 @@ const FILTERS = [
   { label: "Repetidas", value: "repetida" },
 ];
 
-export default function StickerGrid({ active, onRefresh, globalSearch }) {
+export default function StickerGrid({
+  active,
+  onRefresh,
+  globalSearch,
+  onStickerChange,
+}) {
   const [stickers, setStickers] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -67,44 +72,66 @@ export default function StickerGrid({ active, onRefresh, globalSearch }) {
   }, [active, globalSearch]);
 
   async function handleToggle(sticker) {
+    const oldStatus = sticker.status;
+    const newStatus =
+      oldStatus === "colada" ||
+      oldStatus === "repetida" ||
+      oldStatus === "a_colar"
+        ? null
+        : "colada";
+
+    // Optimistic update
+    updateSticker(sticker._id, newStatus, newStatus ? 1 : 0);
+    onStickerChange(oldStatus, newStatus);
+
     try {
-      if (sticker.status === "colada" || sticker.status === "repetida") {
+      if (
+        oldStatus === "colada" ||
+        oldStatus === "repetida" ||
+        oldStatus === "a_colar"
+      ) {
         await api.delete(`/stickers/${sticker._id}/status`);
-        updateSticker(sticker._id, null, 0);
       } else {
         await api.post(`/stickers/${sticker._id}/status`, {
           status: "colada",
           quantity: 1,
         });
-        updateSticker(sticker._id, "colada", 1);
       }
-      onRefresh();
     } catch (err) {
+      // Reverte se der erro
+      updateSticker(sticker._id, oldStatus, sticker.quantity);
+      onStickerChange(newStatus, oldStatus);
       console.error(err);
     }
   }
 
   async function handleRepeat(sticker, delta) {
-    try {
-      const currentExtras =
-        sticker.status === "repetida" ? sticker.quantity : 0;
-      const newExtras = currentExtras + delta;
+    const currentExtras = sticker.status === "repetida" ? sticker.quantity : 0;
+    const newExtras = currentExtras + delta;
+    const oldStatus = sticker.status;
+    const newStatus = newExtras <= 0 ? "colada" : "repetida";
+    const newQty = newExtras <= 0 ? 1 : newExtras;
 
+    // Optimistic update
+    updateSticker(sticker._id, newStatus, newQty);
+    onStickerChange(oldStatus, newStatus);
+
+    try {
       if (newExtras <= 0) {
         await api.post(`/stickers/${sticker._id}/status`, {
           status: "colada",
           quantity: 1,
         });
-        updateSticker(sticker._id, "colada", 1);
       } else {
         await api.post(`/stickers/${sticker._id}/status`, {
           status: "repetida",
           quantity: newExtras,
         });
-        updateSticker(sticker._id, "repetida", newExtras);
       }
-      onRefresh();
     } catch (err) {
+      // Reverte se der erro
+      updateSticker(sticker._id, oldStatus, sticker.quantity);
+      onStickerChange(newStatus, oldStatus);
       console.error(err);
     }
   }
