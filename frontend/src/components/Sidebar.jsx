@@ -4,6 +4,21 @@ import api from "../services/api";
 
 const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 
+const groupFlags = {
+  A: "🇲🇽🇿🇦🇰🇷🇨🇿",
+  B: "🇨🇦🇧🇦🇶🇦🇨🇭",
+  C: "🇧🇷🇲🇦🏴󠁧󠁢󠁳󠁣󠁴󠁿🇭🇹",
+  D: "🇺🇸🇵🇾🇦🇺🇹🇷",
+  E: "🇩🇪🇨🇼🇨🇮🇪🇨",
+  F: "🇳🇱🇯🇵🇸🇪🇹🇳",
+  G: "🇧🇪🇪🇬🇮🇷🇳🇿",
+  H: "🇪🇸🇨🇻🇸🇦🇺🇾",
+  I: "🇫🇷🇸🇳🇮🇶🇳🇴",
+  J: "🇦🇷🇩🇿🇦🇹🇯🇴",
+  K: "🇵🇹🇨🇩🇺🇿🇨🇴",
+  L: "🏴󠁧󠁢󠁥󠁮󠁧󠁿🇭🇷🇬🇭🇵🇦",
+};
+
 export default function Sidebar({
   active,
   onSelect,
@@ -141,7 +156,7 @@ export default function Sidebar({
             return (
               <SidebarItem
                 key={g}
-                label={`Grupo ${g}`}
+                label={`${groupFlags[g]} Grupo ${g}`}
                 active={active === `group-${g}`}
                 onClick={() => handleSelect(`group-${g}`)}
                 percent={percent}

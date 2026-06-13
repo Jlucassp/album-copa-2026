@@ -276,7 +276,7 @@ export default function StickerGrid({
                   style={{ color: "var(--text-primary)" }}
                 >
                   <span className="w-1 h-4 bg-yellow-400 rounded-full inline-block" />
-                  {team}
+                  {stickers.find((s) => s.team === team)?.flag} {team}
                 </h3>
                 <div className="flex gap-2">
                   {!allColadas && (
