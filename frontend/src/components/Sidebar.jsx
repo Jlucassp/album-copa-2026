@@ -1,8 +1,24 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
+import { FlagIcon } from "../utils/flags";
 
 const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
+const groupTeamCodes = {
+  A: ["MEX", "RSA", "KOR", "CZE"],
+  B: ["CAN", "BIH", "QAT", "SUI"],
+  C: ["BRA", "MAR", "SCO", "HAI"],
+  D: ["USA", "PAR", "AUS", "TUR"],
+  E: ["GER", "CUW", "CIV", "ECU"],
+  F: ["NED", "JPN", "SWE", "TUN"],
+  G: ["BEL", "EGY", "IRN", "NZL"],
+  H: ["ESP", "CPV", "KSA", "URU"],
+  I: ["FRA", "SEN", "IRQ", "NOR"],
+  J: ["ARG", "ALG", "AUT", "JOR"],
+  K: ["POR", "COD", "UZB", "COL"],
+  L: ["ENG", "CRO", "GHA", "PAN"],
+};
 
 export default function Sidebar({
   active,
@@ -145,6 +161,7 @@ export default function Sidebar({
                 active={active === `group-${g}`}
                 onClick={() => handleSelect(`group-${g}`)}
                 percent={percent}
+                teamCodes={groupTeamCodes[g]}
               />
             );
           })}
@@ -200,6 +217,7 @@ function SidebarItem({
   percent,
   badge,
   badgeColor = "#facc15",
+  teamCodes,
 }) {
   return (
     <button
@@ -217,7 +235,16 @@ function SidebarItem({
       }}
     >
       <div className="flex items-center justify-between">
-        <span>{label}</span>
+        <div className="flex items-center gap-1.5">
+          {teamCodes && (
+            <div className="flex gap-0.5">
+              {teamCodes.map((code) => (
+                <FlagIcon key={code} teamCode={code} size="sm" />
+              ))}
+            </div>
+          )}
+          <span>{label}</span>
+        </div>
         <div className="flex items-center gap-2">
           {badge > 0 && (
             <span
