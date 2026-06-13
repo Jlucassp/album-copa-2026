@@ -21,6 +21,10 @@ const stickerSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    jsflag: {
+      type: String,
+      default: null,
+    },
     teamCode: {
       type: String,
       default: null,
