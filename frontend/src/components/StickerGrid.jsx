@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { FlagIcon } from "../utils/flags";
 
 const FILTERS = [
   { label: "Todas", value: "all" },
@@ -276,7 +277,10 @@ export default function StickerGrid({
                   style={{ color: "var(--text-primary)" }}
                 >
                   <span className="w-1 h-4 bg-yellow-400 rounded-full inline-block" />
-                  {stickers.find((s) => s.team === team)?.flag} {team}
+                  <FlagIcon
+                    teamCode={stickers.find((s) => s.team === team)?.teamCode}
+                  />
+                  {team}
                 </h3>
                 <div className="flex gap-2">
                   {!allColadas && (
