@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import api from "../services/api";
-import { FlagIcon } from "../utils/flags";
+import { FlagIcon, teamCodeToISO } from "../utils/flags.jsx";
 
 const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 
