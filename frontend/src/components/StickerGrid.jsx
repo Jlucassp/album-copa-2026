@@ -49,19 +49,17 @@ export default function StickerGrid({
           return;
         }
 
-        let filtered = [];
         if (active === "FWC") {
-          filtered = data.filter((s) => s.section === "FWC");
+          setStickers(data.filter((s) => s.section === "FWC"));
         } else if (active === "coca-cola") {
-          filtered = data.filter((s) => s.section === "coca-cola");
+          setStickers(data.filter((s) => s.section === "coca-cola"));
         } else if (active === "extra") {
-          filtered = data.filter((s) => s.section === "extra");
+          setStickers(data.filter((s) => s.section === "extra"));
+        } else if (active === "all-groups") {
+          setStickers(data.filter((s) => s.section === "team"));
         } else if (active.startsWith("group-")) {
-          const group = active.replace("group-", "");
-          filtered = data.filter((s) => s.group === group);
+          setStickers(data.filter((s) => s.section === "team"));
         }
-
-        setStickers(filtered);
       } catch (err) {
         console.error(err);
       } finally {
@@ -172,7 +170,8 @@ export default function StickerGrid({
     );
   }
 
-  const isGroupSection = active.startsWith("group-");
+  const isGroupSection = active.startsWith("group-") || active === "all-groups";
+  const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
   const teams = isGroupSection
     ? [...new Set(stickers.map((s) => s.team))]
     : null;
@@ -218,107 +217,145 @@ export default function StickerGrid({
           </p>
         </div>
       ) : isGroupSection ? (
-        teams.map((team) => {
-          const teamStickers = filteredStickers.filter((s) => s.team === team);
-          if (teamStickers.length === 0) return null;
-
-          const allColadas = teamStickers.every(
-            (s) => s.status === "colada" || s.status === "repetida",
-          );
-
-          async function handleMarkAll() {
-            try {
-              const missing = stickers.filter(
-                (s) => s.team === team && !s.status,
-              );
-              await Promise.all(
-                missing.map((s) =>
-                  api.post(`/stickers/${s._id}/status`, {
-                    status: "colada",
-                    quantity: 1,
-                  }),
-                ),
-              );
-              setStickers((prev) =>
-                prev.map((s) =>
-                  s.team === team && !s.status
-                    ? { ...s, status: "colada", quantity: 1 }
-                    : s,
-                ),
-              );
-              onRefresh();
-            } catch (err) {
-              console.error(err);
-            }
-          }
-
-          async function handleUnmarkAll() {
-            try {
-              const owned = stickers.filter((s) => s.team === team && s.status);
-              await Promise.all(
-                owned.map((s) => api.delete(`/stickers/${s._id}/status`)),
-              );
-              setStickers((prev) =>
-                prev.map((s) =>
-                  s.team === team ? { ...s, status: null, quantity: 0 } : s,
-                ),
-              );
-              onRefresh();
-            } catch (err) {
-              console.error(err);
-            }
-          }
+        groups.map((g) => {
+          const groupStickers = filteredStickers.filter((s) => s.group === g);
+          if (groupStickers.length === 0) return null;
+          const groupTeams = [...new Set(groupStickers.map((s) => s.team))];
 
           return (
-            <div key={team}>
-              <div className="flex items-center justify-between mb-3">
-                <h3
-                  className="font-bold text-base flex items-center gap-2"
+            <div key={g} id={`group-${g}`}>
+              <div
+                className="flex items-center gap-2 mb-4 pb-2 border-b"
+                style={{ borderColor: "var(--border)" }}
+              >
+                <span className="w-2 h-6 bg-yellow-400 rounded-full inline-block" />
+                <h2
+                  className="font-black text-lg"
                   style={{ color: "var(--text-primary)" }}
                 >
-                  <span className="w-1 h-4 bg-yellow-400 rounded-full inline-block" />
-                  <FlagIcon
-                    teamCode={stickers.find((s) => s.team === team)?.teamCode}
-                  />
-                  {team}
-                </h3>
-                <div className="flex gap-2">
-                  {!allColadas && (
-                    <button
-                      onClick={handleMarkAll}
-                      className="text-xs px-3 py-1 rounded-lg font-semibold transition-all"
-                      style={{
-                        backgroundColor: "rgba(250, 204, 21, 0.15)",
-                        color: "#facc15",
-                        border: "1px solid rgba(250, 204, 21, 0.3)",
-                      }}
-                    >
-                      ✓ Marcar todas
-                    </button>
-                  )}
-                  <button
-                    onClick={handleUnmarkAll}
-                    className="text-xs px-3 py-1 rounded-lg font-semibold transition-all"
-                    style={{
-                      backgroundColor: "var(--bg-card)",
-                      color: "var(--text-muted)",
-                      border: "1px solid var(--border)",
-                    }}
-                  >
-                    ✕ Desmarcar todas
-                  </button>
-                </div>
+                  Grupo {g}
+                </h2>
               </div>
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                {teamStickers.map((sticker) => (
-                  <StickerCard
-                    key={sticker._id}
-                    sticker={sticker}
-                    onToggle={handleToggle}
-                    onRepeat={handleRepeat}
-                    isPending={pendingCodes.includes(sticker.code)}
-                  />
-                ))}
+
+              <div className="space-y-6">
+                {groupTeams.map((team) => {
+                  const teamStickers = groupStickers.filter(
+                    (s) => s.team === team,
+                  );
+                  if (teamStickers.length === 0) return null;
+
+                  const allColadas = teamStickers.every(
+                    (s) =>
+                      s.status === "colada" ||
+                      s.status === "repetida" ||
+                      s.status === "a_colar",
+                  );
+
+                  async function handleMarkAll() {
+                    try {
+                      const missing = stickers.filter(
+                        (s) => s.team === team && !s.status,
+                      );
+                      await Promise.all(
+                        missing.map((s) =>
+                          api.post(`/stickers/${s._id}/status`, {
+                            status: "colada",
+                            quantity: 1,
+                          }),
+                        ),
+                      );
+                      setStickers((prev) =>
+                        prev.map((s) =>
+                          s.team === team && !s.status
+                            ? { ...s, status: "colada", quantity: 1 }
+                            : s,
+                        ),
+                      );
+                      onRefresh();
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }
+
+                  async function handleUnmarkAll() {
+                    try {
+                      const owned = stickers.filter(
+                        (s) => s.team === team && s.status,
+                      );
+                      await Promise.all(
+                        owned.map((s) =>
+                          api.delete(`/stickers/${s._id}/status`),
+                        ),
+                      );
+                      setStickers((prev) =>
+                        prev.map((s) =>
+                          s.team === team
+                            ? { ...s, status: null, quantity: 0 }
+                            : s,
+                        ),
+                      );
+                      onRefresh();
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }
+
+                  return (
+                    <div key={team}>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3
+                          className="font-bold text-base flex items-center gap-2"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          <span className="w-1 h-4 bg-yellow-400 rounded-full inline-block" />
+                          <FlagIcon
+                            teamCode={
+                              stickers.find((s) => s.team === team)?.teamCode
+                            }
+                          />
+                          {team}
+                        </h3>
+                        <div className="flex gap-2">
+                          {!allColadas && (
+                            <button
+                              onClick={handleMarkAll}
+                              className="text-xs px-3 py-1 rounded-lg font-semibold transition-all"
+                              style={{
+                                backgroundColor: "rgba(250,204,21,0.15)",
+                                color: "#facc15",
+                                border: "1px solid rgba(250,204,21,0.3)",
+                              }}
+                            >
+                              ✓ Marcar todas
+                            </button>
+                          )}
+                          <button
+                            onClick={handleUnmarkAll}
+                            className="text-xs px-3 py-1 rounded-lg font-semibold transition-all"
+                            style={{
+                              backgroundColor: "var(--bg-card)",
+                              color: "var(--text-muted)",
+                              border: "1px solid var(--border)",
+                            }}
+                          >
+                            ✕ Desmarcar todas
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                        {teamStickers.map((sticker) => (
+                          <StickerCard
+                            key={sticker._id}
+                            sticker={sticker}
+                            onToggle={handleToggle}
+                            onRepeat={handleRepeat}
+                            isPending={pendingCodes.includes(sticker.code)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

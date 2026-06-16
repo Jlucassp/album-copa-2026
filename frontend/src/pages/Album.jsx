@@ -42,8 +42,28 @@ export default function Album() {
   }
 
   function handleSelect(section) {
-    setActive(section);
     setSearch("");
+
+    if (section.startsWith("group-")) {
+      const group = section.replace("group-", "");
+      // Se já está nos grupos, só faz scroll
+      if (active === "all-groups" || active.startsWith("group-")) {
+        const el = document.getElementById(`group-${group}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+      }
+      // Se não está nos grupos, muda para all-groups e depois faz scroll
+      setActive("all-groups");
+      setTimeout(() => {
+        const el = document.getElementById(`group-${group}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+      return;
+    }
+
+    setActive(section);
   }
 
   return (
@@ -145,8 +165,8 @@ export default function Album() {
             {active === "repetidas" && "Minhas Repetidas"}
             {active === "trocas" && "Pedidos de Troca"}
             {active === "trocas-enviadas" && "Pedidos Enviados"}
-            {active.startsWith("group-") &&
-              `Grupo ${active.replace("group-", "")}`}
+            {(active === "all-groups" || active.startsWith("group-")) &&
+              "Grupos"}
           </h2>
 
           {/* Toggle tema */}
