@@ -339,7 +339,7 @@ export default function StickerGrid({
                           </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                         {teamStickers.map((sticker) => (
                           <StickerCard
                             key={sticker._id}
@@ -358,7 +358,7 @@ export default function StickerGrid({
           );
         })
       ) : (
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
           {filteredStickers.map((sticker) => (
             <StickerCard
               key={sticker._id}
@@ -379,25 +379,34 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
   const isRepetida = sticker.status === "repetida";
   const isAColar = sticker.status === "a_colar";
 
+  const borderColor = isColada
+    ? "rgba(250, 204, 21, 0.5)"
+    : isRepetida
+      ? "rgba(96, 165, 250, 0.5)"
+      : isAColar
+        ? "rgba(74, 222, 128, 0.5)"
+        : "var(--border)";
+
+  const bgColor = isColada
+    ? "rgba(250, 204, 21, 0.08)"
+    : isRepetida
+      ? "rgba(96, 165, 250, 0.08)"
+      : isAColar
+        ? "rgba(74, 222, 128, 0.08)"
+        : "var(--bg-card)";
+
+  const codeColor = isColada
+    ? "#facc15"
+    : isRepetida
+      ? "#60a5fa"
+      : isAColar
+        ? "#4ade80"
+        : "var(--text-muted)";
+
   return (
     <div
-      className="relative rounded-xl border transition-all duration-200 p-2 flex flex-col items-center gap-1"
-      style={{
-        backgroundColor: isColada
-          ? "rgba(250, 204, 21, 0.1)"
-          : isRepetida
-            ? "rgba(96, 165, 250, 0.1)"
-            : isAColar
-              ? "rgba(74, 222, 128, 0.1)"
-              : "var(--bg-card)",
-        borderColor: isColada
-          ? "rgba(250, 204, 21, 0.5)"
-          : isRepetida
-            ? "rgba(96, 165, 250, 0.5)"
-            : isAColar
-              ? "rgba(74, 222, 128, 0.5)"
-              : "var(--border)",
-      }}
+      className="relative rounded-xl border transition-all duration-200 p-2.5"
+      style={{ backgroundColor: bgColor, borderColor }}
     >
       {isPending && (
         <div
@@ -410,29 +419,46 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
         />
       )}
 
-      <span
-        className="text-xs font-bold"
-        style={{
-          color: isColada
-            ? "#facc15"
-            : isRepetida
-              ? "#60a5fa"
-              : isAColar
-                ? "#4ade80"
-                : "var(--text-muted)",
-        }}
-      >
-        {sticker.code}
-      </span>
-
-      {sticker.description && (
-        <span
-          className="text-center leading-tight"
+      {/* Linha superior: código + botão */}
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-xs font-black" style={{ color: codeColor }}>
+          {sticker.code}
+        </span>
+        <button
+          onClick={() => onToggle(sticker)}
+          title={
+            isColada || isRepetida || isAColar
+              ? "Remover"
+              : "Marcar como colada"
+          }
+          className="w-6 h-6 rounded-lg flex items-center justify-center text-xs transition-all shrink-0"
           style={{
-            color: "var(--text-muted)",
-            fontSize: "9px",
-            lineHeight: "1.2",
-            maxWidth: "100%",
+            backgroundColor: isColada
+              ? "#facc15"
+              : isRepetida
+                ? "rgba(96, 165, 250, 0.2)"
+                : isAColar
+                  ? "rgba(74, 222, 128, 0.2)"
+                  : "var(--bg-secondary)",
+            color: isColada
+              ? "#09090b"
+              : isRepetida
+                ? "#60a5fa"
+                : isAColar
+                  ? "#4ade80"
+                  : "var(--text-muted)",
+          }}
+        >
+          {isColada || isRepetida || isAColar ? "✓" : "+"}
+        </button>
+      </div>
+
+      {/* Nome do jogador */}
+      {sticker.description && (
+        <p
+          className="text-xs mt-1 leading-tight"
+          style={{
+            color: "var(--text-secondary)",
             overflow: "hidden",
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -440,43 +466,12 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
           }}
         >
           {sticker.description}
-        </span>
+        </p>
       )}
 
-      {isAColar && (
-        <span className="text-xs" style={{ color: "#4ade80" }}>
-          a colar
-        </span>
-      )}
-
-      <button
-        onClick={() => onToggle(sticker)}
-        title={
-          isColada || isRepetida || isAColar ? "Remover" : "Marcar como colada"
-        }
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all"
-        style={{
-          backgroundColor: isColada
-            ? "#facc15"
-            : isRepetida
-              ? "rgba(96, 165, 250, 0.2)"
-              : isAColar
-                ? "rgba(74, 222, 128, 0.2)"
-                : "var(--bg-secondary)",
-          color: isColada
-            ? "#09090b"
-            : isRepetida
-              ? "#60a5fa"
-              : isAColar
-                ? "#4ade80"
-                : "var(--text-muted)",
-        }}
-      >
-        {isColada || isRepetida || isAColar ? "✓" : "+"}
-      </button>
-
+      {/* Repetidas */}
       {(isColada || isRepetida) && (
-        <div className="flex items-center gap-1 mt-0.5">
+        <div className="flex items-center gap-1 mt-1.5">
           <button
             onClick={() => onRepeat(sticker, 1)}
             title="Tenho repetida"
@@ -506,6 +501,12 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
             </>
           )}
         </div>
+      )}
+
+      {isAColar && (
+        <p className="text-xs mt-1" style={{ color: "#4ade80" }}>
+          a colar
+        </p>
       )}
     </div>
   );
