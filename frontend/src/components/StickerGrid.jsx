@@ -172,9 +172,6 @@ export default function StickerGrid({
 
   const isGroupSection = active.startsWith("group-") || active === "all-groups";
   const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
-  const teams = isGroupSection
-    ? [...new Set(stickers.map((s) => s.team))]
-    : null;
 
   return (
     <div className="space-y-6">
