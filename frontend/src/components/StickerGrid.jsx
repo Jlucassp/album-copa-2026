@@ -399,7 +399,6 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
               : "var(--border)",
       }}
     >
-      {/* Indicador de troca pendente */}
       {isPending && (
         <div
           className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2"
@@ -425,6 +424,30 @@ function StickerCard({ sticker, onToggle, onRepeat, isPending }) {
       >
         {sticker.code}
       </span>
+
+      {sticker.description && (
+        <span
+          className="text-center leading-tight"
+          style={{
+            color: "var(--text-muted)",
+            fontSize: "9px",
+            lineHeight: "1.2",
+            maxWidth: "100%",
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+          }}
+        >
+          {sticker.description}
+        </span>
+      )}
+
+      {isAColar && (
+        <span className="text-xs" style={{ color: "#4ade80" }}>
+          a colar
+        </span>
+      )}
 
       <button
         onClick={() => onToggle(sticker)}
